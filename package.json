@@ -1,0 +1,21 @@
+{
+  "name": "codecity",
+  "version": "0.1.0",
+  "description": "A visual trust layer for AI coding agents — watch your repo as a city while the agent works.",
+  "type": "module",
+  "bin": {
+    "codecity": "bin/codecity.js"
+  },
+  "scripts": {
+    "start": "node bin/codecity.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "bin",
+    "src",
+    "public"
+  ],
+  "license": "MIT"
+}

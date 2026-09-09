@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CodeCity</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <canvas id="city"></canvas>
+
+    <header id="topbar">
+      <span class="brand">CodeCity</span>
+      <span id="root" class="dim"></span>
+      <span id="agent" class="chip">no agent yet</span>
+    </header>
+
+    <aside id="sidebar">
+      <div class="head">Directories</div>
+      <input id="dir-filter" placeholder="filter directories" spellcheck="false" autocomplete="off" />
+      <ol id="dir-list"></ol>
+      <div class="head">Legend</div>
+      <ol id="legend">
+        <li><i data-state="unseen"></i>untouched</li>
+        <li><i data-state="context"></i>read · in context</li>
+        <li><i data-state="stale"></i>read · context cooled</li>
+        <li><i data-state="changed"></i>changed by the agent</li>
+        <li><i data-state="new"></i>new ground</li>
+        <li><i data-state="risk"></i>unreviewed churn</li>
+      </ol>
+      <p class="note dim">Height is line count — one storey per 30 lines. Each terrace is one level deeper in the tree.</p>
+    </aside>
+
+    <section id="panel">
+      <p id="panel-empty" class="dim">Click a block, or use ↑↓ to walk the city.</p>
+
+      <div id="panel-body" hidden>
+        <div class="head" id="panel-dir"></div>
+        <h2 id="panel-file"></h2>
+        <p id="panel-state"></p>
+        <p id="panel-meta" class="dim"></p>
+
+        <nav id="tabs">
+          <button data-tab="activity" class="on">Activity</button>
+          <button data-tab="what">What it does</button>
+          <button data-tab="blast">Blast radius</button>
+        </nav>
+
+        <div data-pane="activity">
+          <ol id="panel-events" class="log"></ol>
+        </div>
+
+        <div data-pane="what" hidden>
+          <button id="explain">Ask what it does</button>
+          <p id="panel-explain" hidden></p>
+        </div>
+
+        <div data-pane="blast" hidden>
+          <div class="head">Imports →</div>
+          <ol id="blast-out" class="log"></ol>
+          <div class="head">Imported by ←</div>
+          <ol id="blast-in" class="log"></ol>
+        </div>
+      </div>
+    </section>
+
+    <footer id="statusbar">
+      <span id="status-counts" class="dim"></span>
+      <span id="ticker"></span>
+      <span id="keys" class="dim">↑↓ select · ⏎ explain · esc clear</span>
+    </footer>
+
+    <script type="module" src="/city.js"></script>
+  </body>
+</html>

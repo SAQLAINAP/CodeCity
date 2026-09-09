@@ -1,0 +1,248 @@
+/* The chrome spends no colour. Green, amber, red and blue mean agent attention and
+   nothing else, so the eye can trust that anything coloured is worth looking at. */
+:root {
+  --bg: #0a0b0d;
+  --chrome: #0d1014e6;
+  --line: #1e242b;
+  --line-soft: #161b21;
+  --ink: #c9d2db;
+  --dim: #69737e;
+  --accent: #f2f6f9;
+
+  --unseen: #39414b;
+  --context: #3fb27a;
+  --stale: #d1462f;
+  --changed: #e0952b;
+  --new: #4d8fd6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+}
+
+#city { display: block; cursor: crosshair; }
+#city.dragging { cursor: grabbing; }
+
+.dim { color: var(--dim); }
+
+.head {
+  margin: 14px 0 6px;
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.head:first-child { margin-top: 0; }
+
+/* ---------- chrome frames ---------- */
+
+#topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 32px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--chrome);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+#root {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+.chip {
+  margin-left: auto;
+  flex: none;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.chip.live { color: var(--context); border-color: #26483a; }
+.chip.dead { color: var(--stale); border-color: #4a2620; }
+
+#sidebar,
+#panel {
+  position: fixed;
+  top: 32px;
+  bottom: 26px;
+  padding: 12px;
+  overflow-y: auto;
+  background: var(--chrome);
+  backdrop-filter: blur(6px);
+}
+#sidebar { left: 0; width: min(208px, 22vw); border-right: 1px solid var(--line); }
+#panel { right: 0; width: min(336px, 36vw); border-left: 1px solid var(--line); }
+
+#sidebar::-webkit-scrollbar,
+#panel::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb,
+#panel::-webkit-scrollbar-thumb { background: var(--line); }
+
+#statusbar {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 26px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--chrome);
+  border-top: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+}
+#status-counts { flex: none; text-transform: uppercase; letter-spacing: 0.16em; font-size: 9px; }
+#ticker { flex: 1; overflow: hidden; text-overflow: ellipsis; color: var(--dim); }
+#ticker b { color: var(--ink); font-weight: 400; }
+#keys { flex: none; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* ---------- directory index ---------- */
+
+#dir-filter {
+  width: 100%;
+  padding: 5px 7px;
+  background: #000;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: 0.1em;
+}
+#dir-filter::placeholder { color: #454e57; text-transform: uppercase; font-size: 9px; }
+#dir-filter:focus { outline: none; border-color: var(--accent); }
+
+#dir-list, #legend, .log { margin: 0; padding: 0; list-style: none; }
+
+#dir-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 6px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+#dir-list li:hover { border-left-color: var(--line); color: var(--accent); }
+#dir-list li.on { border-left-color: var(--accent); color: var(--accent); }
+#dir-list .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Share of the subtree the agent has touched — a filled bar rather than a ratio,
+   because the useful question is "how far in is it", not "which two numbers". */
+#dir-list .bar { flex: none; width: 34px; height: 3px; background: var(--line); }
+#dir-list .bar i { display: block; height: 100%; background: var(--dim); }
+#dir-list li.on .bar i, #dir-list li:hover .bar i { background: var(--accent); }
+
+.note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--line-soft); line-height: 1.8; }
+
+#legend li { display: flex; gap: 8px; align-items: center; color: var(--dim); padding: 1px 0; }
+#legend i { width: 9px; height: 9px; flex: none; }
+#legend i[data-state='unseen'] { background: var(--unseen); }
+#legend i[data-state='context'] { background: var(--context); }
+#legend i[data-state='stale'] { background: var(--stale); }
+#legend i[data-state='changed'] { background: var(--changed); }
+#legend i[data-state='new'] { background: var(--new); }
+#legend i[data-state='risk'] {
+  border: 1px solid var(--stale);
+  background: repeating-linear-gradient(45deg, var(--stale) 0 1px, transparent 1px 3px);
+}
+
+/* ---------- file panel ---------- */
+
+#panel h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+}
+#panel p { margin: 4px 0 0; }
+
+#panel-state {
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+}
+
+#tabs {
+  display: flex;
+  margin: 14px 0 0;
+  border-bottom: 1px solid var(--line);
+}
+#tabs button {
+  padding: 5px 8px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  margin-bottom: -1px;
+  color: var(--dim);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#tabs button:hover { color: var(--ink); }
+#tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+#panel [data-pane] { padding-top: 10px; }
+
+.log li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--dim);
+  word-break: break-word;
+}
+.log li:last-child { border-bottom: 0; }
+.log .tool { color: var(--ink); text-transform: uppercase; font-size: 9px; letter-spacing: 0.16em; }
+.log .when { float: right; font-size: 9px; }
+.log .to { color: var(--ink); }
+.log .note { display: block; }
+
+#explain {
+  width: 100%;
+  padding: 7px;
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#explain:hover:not(:disabled) { background: #f2f6f912; }
+#explain:disabled { opacity: 0.45; cursor: progress; }
+
+#panel-explain {
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+}

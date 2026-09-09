@@ -1,0 +1,55 @@
+# CodeCity's own output: per-session event logs from the watched project.
+# These carry real file paths, shell commands and diffs — never commit them.
+.codecity/
+*.jsonl
+
+# Agent / editor local config — may carry tokens, MCP creds, machine paths.
+.claude/
+.cursor/
+.windsurf/
+.aider*
+.vscode/
+.idea/
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+*.crt
+credentials
+credentials.json
+secrets.json
+.netrc
+.npmrc
+.pypirc
+*.token
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Logs and scratch
+*.log
+npm-debug.log*
+yarn-error.log*
+.cache/
+tmp/
+*.tmp
+*.bak
+*.orig
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
