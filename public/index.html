@@ -42,7 +42,7 @@
 
         <nav id="tabs">
           <button data-tab="activity" class="on">Activity</button>
-          <button data-tab="what">What it does</button>
+          <!-- <button data-tab="what">What it does</button> -->
           <button data-tab="blast">Blast radius</button>
         </nav>
 
@@ -50,16 +50,21 @@
           <ol id="panel-events" class="log"></ol>
         </div>
 
+        <!-- The one model-backed surface. Parked, not deleted: /api/explain still
+             works, so re-enabling is uncommenting this and its block in city.js.
         <div data-pane="what" hidden>
           <button id="explain">Ask what it does</button>
           <p id="panel-explain" hidden></p>
         </div>
+        -->
 
         <div data-pane="blast" hidden>
           <div class="head">Imports →</div>
           <ol id="blast-out" class="log"></ol>
           <div class="head">Imported by ←</div>
           <ol id="blast-in" class="log"></ol>
+          <div class="head">Outside the city ↗</div>
+          <ol id="blast-deps" class="log"></ol>
         </div>
       </div>
     </section>
@@ -67,7 +72,7 @@
     <footer id="statusbar">
       <span id="status-counts" class="dim"></span>
       <span id="ticker"></span>
-      <span id="keys" class="dim">↑↓ select · ⏎ explain · esc clear</span>
+      <span id="keys" class="dim">↑↓ select · ⏎ blast radius · esc clear</span>
     </footer>
 
     <script type="module" src="/city.js"></script>

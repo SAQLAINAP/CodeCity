@@ -3,9 +3,32 @@ import path from 'node:path';
 
 export const MARKER = 'codecity/event';
 
-export function hookCommand(port) {
+// This runs after every single tool call, so it has to be cheap and it has to fail
+// silently. Cheap rules out a Node script: ~76ms of interpreter startup per call
+// against curl's ~16ms. Silent means swallowing the exit code, because a CodeCity
+// that simply isn't running makes curl exit 7, and Claude Code surfaces any
+// non-zero hook exit as an error — once per tool call.
+export function hookCommand(port, platform = process.platform) {
+  const url = `http://127.0.0.1:${port}/${MARKER}`;
+
+  if (platform === 'win32') {
+    // Claude Code runs hooks through Git Bash when it is installed and PowerShell
+    // when it is not, and which one we will get cannot be known at install time —
+    // so this single string has to be valid in both. That rules out `|| true`
+    // (PowerShell 5.1 has no `||`) and bare `curl` (in PowerShell 5.1 that name is
+    // an alias for Invoke-WebRequest, not curl at all). `curl.exe` and a trailing
+    // `exit 0` are syntax the two shells agree on. Needs Windows 10 1803+, which
+    // is where curl.exe ships.
+    //
+    // Every argument is double-quoted, which is a no-op for sh but load-bearing for
+    // PowerShell: bare `@-` risks being read as the splatting operator, and an
+    // unquoted header would split on its space. Quoting means neither parser gets
+    // a chance to be clever.
+    return `curl.exe -s -m 1 -X POST "${url}" -H "content-type: application/json" --data-binary "@-" ; exit 0`;
+  }
+
   // -m 1 and `|| true` mean a missing or slow CodeCity can never block the agent.
-  return `curl -sS -m 1 -X POST http://127.0.0.1:${port}/${MARKER} -H 'content-type: application/json' --data-binary @- >/dev/null 2>&1 || true`;
+  return `curl -sS -m 1 -X POST ${url} -H 'content-type: application/json' --data-binary @- >/dev/null 2>&1 || true`;
 }
 
 function settingsPath(root, shared) {
@@ -59,9 +82,17 @@ export function uninstallHooks(root, { shared = false } = {}) {
   return file;
 }
 
-export function isInstalled(root, { port, shared = false } = {}) {
+// 'missing' | 'foreign' | 'ok'. 'foreign' means a hook is there but was written for
+// another shell — what you get when a --shared settings.json is committed on macOS
+// and checked out on Windows. Silently doing nothing is the worst outcome for a
+// tool whose whole job is showing you what the agent touched, so it is worth naming.
+export function hookStatus(root, { port, shared = false } = {}) {
   const settings = read(settingsPath(root, shared));
-  return (settings.hooks?.PostToolUse ?? []).some((entry) =>
-    entry?.hooks?.some((hook) => String(hook.command).includes(`:${port}/${MARKER}`)),
-  );
+  const installed = (settings.hooks?.PostToolUse ?? [])
+    .flatMap((entry) => entry?.hooks ?? [])
+    .map((hook) => String(hook.command))
+    .filter((command) => command.includes(`:${port}/${MARKER}`));
+
+  if (installed.length === 0) return 'missing';
+  return installed.includes(hookCommand(port)) ? 'ok' : 'foreign';
 }

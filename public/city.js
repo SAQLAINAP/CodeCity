@@ -826,8 +826,7 @@ window.addEventListener('keydown', (event) => {
     return;
   }
   if (event.key === 'Enter' && selected) {
-    showTab('what');
-    explainButton.click();
+    showTab('blast');
     return;
   }
   if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
@@ -850,10 +849,11 @@ const panelFile = document.getElementById('panel-file');
 const panelState = document.getElementById('panel-state');
 const panelMeta = document.getElementById('panel-meta');
 const panelEvents = document.getElementById('panel-events');
-const panelExplain = document.getElementById('panel-explain');
-const explainButton = document.getElementById('explain');
+// const panelExplain = document.getElementById('panel-explain');
+// const explainButton = document.getElementById('explain');
 const blastOut = document.getElementById('blast-out');
 const blastIn = document.getElementById('blast-in');
+const blastDeps = document.getElementById('blast-deps');
 
 function ago(ts) {
   const seconds = Math.round((Date.now() - ts) / 1000);
@@ -898,16 +898,22 @@ function clearSelection() {
 // Blast radius is pure graph data — zero tokens, and it answers the question the
 // explain panel would otherwise be asked: what else does this touch?
 function renderBlast(file) {
-  const line = (key) => {
-    const building = city.buildings.get(key);
+  const line = (name) => {
+    const building = city.buildings.get(name);
     const state = building ? STATES[stateOf(building, Date.now()).key] : null;
-    return `<li><span class="to">${escapeHtml(key)}</span>`
+    return `<li><span class="to">${escapeHtml(name)}</span>`
       + `<span class="note" style="color:${state ? state.color : DIM}">${state ? state.label : 'outside the city'}</span></li>`;
   };
   const out = importsOut.get(file) ?? [];
   const incoming = importsIn.get(file) ?? [];
+  // Third-party packages get a list, not buildings. They are real dependencies, but
+  // the agent never edits them, so giving them ground would be a skyline of noise.
+  const deps = city.buildings.get(file)?.deps ?? [];
   blastOut.innerHTML = out.length ? out.map(line).join('') : '<li>imports nothing in this city</li>';
   blastIn.innerHTML = incoming.length ? incoming.map(line).join('') : '<li>nothing here imports it</li>';
+  blastDeps.innerHTML = deps.length
+    ? deps.map((name) => `<li><span class="to">${escapeHtml(name)}</span></li>`).join('')
+    : '<li>no external packages</li>';
 }
 
 let panelRequest = 0;
@@ -918,9 +924,6 @@ async function openPanel(building) {
   panelBody.hidden = false;
   panelDir.textContent = building.dir || 'root';
   panelFile.textContent = building.path.split('/').pop();
-  panelExplain.hidden = true;
-  explainButton.disabled = false;
-  explainButton.dataset.file = building.path;
   renderBlast(building.path);
 
   const response = await fetch(`/api/building?file=${encodeURIComponent(building.path)}`);
@@ -946,28 +949,30 @@ async function openPanel(building) {
     : '<li>the agent has not touched this file</li>';
 }
 
-explainButton.addEventListener('click', async () => {
-  const file = explainButton.dataset.file;
-  if (!file) return;
-  explainButton.disabled = true;
-  explainButton.textContent = 'asking…';
-  panelExplain.hidden = false;
-  panelExplain.textContent = '…';
-  try {
-    const response = await fetch('/api/explain', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ file }),
-    });
-    const result = await response.json();
-    const note = result.source === 'model' ? '' : `\n\n[${result.source}${result.error ? `: ${result.error}` : ''}]`;
-    panelExplain.textContent = `${result.text}${note}`;
-  } catch (error) {
-    panelExplain.textContent = `Could not explain: ${error.message}`;
-  }
-  explainButton.disabled = false;
-  explainButton.textContent = 'Ask what it does';
-});
+// Parked with its markup in index.html. /api/explain is still served, so this is a
+// two-uncomment restore.
+// explainButton.addEventListener('click', async () => {
+//   const file = explainButton.dataset.file;
+//   if (!file) return;
+//   explainButton.disabled = true;
+//   explainButton.textContent = 'asking…';
+//   panelExplain.hidden = false;
+//   panelExplain.textContent = '…';
+//   try {
+//     const response = await fetch('/api/explain', {
+//       method: 'POST',
+//       headers: { 'content-type': 'application/json' },
+//       body: JSON.stringify({ file }),
+//     });
+//     const result = await response.json();
+//     const note = result.source === 'model' ? '' : `\n\n[${result.source}${result.error ? `: ${result.error}` : ''}]`;
+//     panelExplain.textContent = `${result.text}${note}`;
+//   } catch (error) {
+//     panelExplain.textContent = `Could not explain: ${error.message}`;
+//   }
+//   explainButton.disabled = false;
+//   explainButton.textContent = 'Ask what it does';
+// });
 
 /* ---------- directory index ---------- */
 
@@ -1067,8 +1072,10 @@ function applyEvent(event, building, roads) {
   feed.unshift(event);
   if (feed.length > 200) feed.length = 200;
 
-  if (roads?.length) {
-    city.roads.push(...roads);
+  // `roads` is the file's complete outgoing set after the write, or null if the event
+  // said nothing about imports. Replacing is what lets a deleted import lose its road.
+  if (roads) {
+    city.roads = city.roads.filter((road) => road.from !== event.file).concat(roads);
     indexRoads();
   }
 

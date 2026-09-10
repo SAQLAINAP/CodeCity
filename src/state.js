@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { scanProject, lineCount, importsOf } from './scan.js';
+import { scanProject, lineCount, importsOf, indexFile } from './scan.js';
 
 const EVENTS_PER_BUILDING = 12;
 const FEED_LENGTH = 200;
@@ -15,18 +15,15 @@ export class CityState {
     this.root = root;
     this.buildings = new Map();
     this.roads = [];
-    this.roadKeys = new Set();
     this.feed = [];
     this.startedAt = Date.now();
 
-    const { files, roads, totalFound, truncated } = scanProject(root, options);
+    const { files, roads, index, totalFound, truncated } = scanProject(root, options);
+    this.index = index;
     this.totalFound = totalFound;
     this.truncated = truncated;
     for (const file of files) this.buildings.set(file.path, this.#newBuilding(file));
-    for (const road of roads) {
-      this.roads.push(road);
-      this.roadKeys.add(`${road.from}\u0000${road.to}`);
-    }
+    this.roads.push(...roads);
 
     this.logDir = path.join(root, '.codecity');
     fs.mkdirSync(this.logDir, { recursive: true });
@@ -39,6 +36,7 @@ export class CityState {
       path: file.path,
       dir: file.dir === '.' ? '' : file.dir,
       loc: file.loc,
+      deps: file.deps ?? [],
       action: null,
       lastTs: null,
       lastRead: null,
@@ -99,13 +97,14 @@ export class CityState {
     this.feed.unshift(event);
     if (this.feed.length > FEED_LENGTH) this.feed.length = FEED_LENGTH;
 
-    if (!event.file) return { building: null, roads: [] };
+    if (!event.file) return { building: null, roads: null };
 
     let building = this.buildings.get(event.file);
     if (!building) {
       // The agent created a file that didn't exist when we scanned — a new plot.
       building = this.#newBuilding({ path: event.file, dir: path.dirname(event.file), loc: 0 });
       this.buildings.set(event.file, building);
+      indexFile(this.index, path.join(this.root, event.file));
       // Stamped on the event, not just the building: after a restart the file
       // exists, so the log is the only remaining evidence the agent made it.
       event.created = true;
@@ -122,7 +121,8 @@ export class CityState {
       building.unreviewedWrites = 0;
     }
 
-    let roads = [];
+    // null means "this event says nothing about roads"; [] means "it has none".
+    let roads = null;
     if (WRITE_ACTIONS.has(event.action)) {
       building.writes += 1;
       building.lastWrite = event.ts;
@@ -143,23 +143,22 @@ export class CityState {
     return { building, roads };
   }
 
-  // Imports are re-read after every write, so a dependency added mid-session shows
-  // up as a road immediately instead of waiting for a restart.
+  // Imports are re-read after every write, so a dependency added mid-session shows up
+  // as a road immediately instead of waiting for a restart. The file's whole outgoing
+  // set is replaced rather than appended to: an import the agent just deleted has to
+  // take its road with it, or the city keeps advertising a dependency that is gone.
   #refreshRoads(relative) {
-    const known = new Set();
-    for (const key of this.buildings.keys()) known.add(path.join(this.root, key));
+    const { targets, deps } = importsOf(path.join(this.root, relative), this.index);
+    const building = this.buildings.get(relative);
+    if (building) building.deps = deps;
 
-    const added = [];
-    for (const target of importsOf(path.join(this.root, relative), known)) {
-      const to = path.relative(this.root, target);
-      const key = `${relative}\u0000${to}`;
-      if (this.roadKeys.has(key)) continue;
-      this.roadKeys.add(key);
-      const road = { from: relative, to };
-      this.roads.push(road);
-      added.push(road);
-    }
-    return added;
+    const outgoing = targets.map((target) => ({
+      from: relative,
+      to: path.relative(this.root, target).split(path.sep).join('/'),
+    }));
+    this.roads = this.roads.filter((road) => road.from !== relative);
+    this.roads.push(...outgoing);
+    return outgoing;
   }
 
   apply(event) {

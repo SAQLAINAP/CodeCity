@@ -113,6 +113,28 @@ Restart Claude Code after `init` so it picks up the hook, then work normally.
 | `--no-open` | off | Don't launch a browser. |
 | `--fresh` | off | Ignore the previous session log instead of replaying it. |
 
+Run `npm test` for the suite. It covers hook installation and the import graph; the
+renderer is checked by eye.
+
+### Platform support
+
+Node >= 20, plus `curl` — which macOS, Linux and Windows 10 1803+ all ship.
+
+The hook has to be a shell string in `settings.json`, and Claude Code runs it with a
+different shell per platform, so `init` writes a different command per platform.
+Windows is the interesting case: Claude Code uses Git Bash when it is installed and
+PowerShell when it is not, and install time can't tell which — so the Windows
+command is written to be valid in both. That means `curl.exe` rather than `curl`
+(in PowerShell 5.1 `curl` is an alias for `Invoke-WebRequest`) and a trailing
+`exit 0` rather than `|| true` (PowerShell 5.1 has no `||`).
+
+Either way the hook stays silent and always exits 0. A CodeCity that isn't running
+must never put an error in front of you once per tool call.
+
+One consequence: with `--shared`, the hook is committed, and a hook written on macOS
+won't fire on Windows. `codecity` detects this on startup and tells you to re-run
+`init` rather than leaving you with a city that quietly never moves.
+
 `codecity uninstall` removes the hook again. Session events are appended to
 `.codecity/session-<timestamp>.jsonl` in the watched project, and the newest log is
 replayed on startup so a restart doesn't lose the city.
