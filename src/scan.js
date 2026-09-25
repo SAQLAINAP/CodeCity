@@ -166,7 +166,11 @@ const LANGS = {
     ],
   },
   html: {
-    namespaced: false, comments: ['html'], targets: ['.js', '.mjs', '.ts', '.css', '.scss', '.html', '.htm'],
+    // .tsx/.jsx matter: `<script type="module" src="src/main.tsx">` is how a Vite
+    // app boots, and it is usually the only edge from the page into the front end.
+    namespaced: false,
+    comments: ['html'],
+    targets: ['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.css', '.scss', '.sass', '.less', '.html', '.htm'],
     patterns: [
       { re: /\b(?:src|href|data-src)\s*=\s*['"]([^'"]+)['"]/g },
       { re: /\b(?:include|extends)\s+['"]([^'"]+)['"]/g, map: hereOrAway },
@@ -533,7 +537,12 @@ export function importsOf(absolute, index) {
     const away = candidates.filter((candidate) => !candidate.startsWith('.'));
     if (local || away.length === 0 || slash(spec).startsWith('/')) continue;
     const name = packageName(away[0]);
-    if (name && !name.includes('*')) deps.add(name);
+    if (!name || name.includes('*')) continue;
+    // If the leading segment names a directory that exists here, this was a path we
+    // failed to place — a generated file, or one past the --max-files cap — not a
+    // package. `src/main.tsx` must never be reported as a dependency called `src`.
+    if (index.byDir.has(name)) continue;
+    deps.add(name);
   }
   return { targets: [...targets], deps: [...deps] };
 }

@@ -421,7 +421,11 @@ function drawRoads(now) {
     });
     ctx.save();
     if (!linked) ctx.setLineDash([2, 3]);
-    ctx.strokeStyle = linked ? ACCENT : hot ? '#4a5049' : '#2c322e';
+    // Idle roads were #2c322e, which is 1.5:1 against the background — a 1px dashed
+    // line at that contrast is invisible, and a city whose roads cannot be seen
+    // fails to show the coupling it exists to show. 1.9:1 stays a hairline but
+    // reads, and still sits under the hot (2.4:1) and selected tiers.
+    ctx.strokeStyle = linked ? ACCENT : hot ? '#4a5049' : '#39423b';
     // Blast radius is the reason roads exist, so the selected file's edges get to
     // shout while the other two hundred stay hairlines.
     ctx.lineWidth = linked ? 1.75 : 1;

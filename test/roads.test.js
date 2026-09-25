@@ -144,6 +144,34 @@ test('a comment mentioning an import does not create a road', () => {
   assert.deepEqual(roadsFrom(scanProject(root).roads, 'src/main.js'), []);
 });
 
+// Found during a dry run on a Vite-shaped repo: .tsx was missing from the html
+// target list, so the page's only edge into the app never resolved.
+test('an html script tag reaches a .tsx entry point', () => {
+  const root = project({
+    'index.html': '<script type="module" src="src/main.tsx"></script>\n<link rel="stylesheet" href="src/app.css">\n',
+    'src/main.tsx': "import React from 'react';\n",
+    'src/app.css': 'body{}\n',
+  });
+  assert.deepEqual(roadsFrom(scanProject(root).roads, 'index.html'), ['src/app.css', 'src/main.tsx']);
+});
+
+// Same dry run: when that path failed to resolve it was reported as an external
+// package named `src`. Inventing a dependency is worse than missing one.
+test('an unresolved path is not reported as an external package', () => {
+  const root = project({
+    'index.html': '<script src="src/missing.tsx"></script>\n',
+    'src/present.tsx': 'export default 1;\n',
+  });
+  const { files } = scanProject(root);
+  assert.deepEqual(files.find((f) => f.path === 'index.html').deps, []);
+});
+
+test('a real package is still reported even when it ends in a file extension', () => {
+  const root = project({ 'src/main.js': "import 'bootstrap/dist/css/bootstrap.min.css';\n" });
+  const { files } = scanProject(root);
+  assert.deepEqual(files.find((f) => f.path === 'src/main.js').deps, ['bootstrap']);
+});
+
 test('a file never has a road to itself', () => {
   const root = project({ 'src/main.js': "import x from './main.js';\n" });
   assert.deepEqual(roadsFrom(scanProject(root).roads, 'src/main.js'), []);

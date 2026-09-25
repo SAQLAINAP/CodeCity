@@ -93,7 +93,18 @@ body {
   background: var(--chrome);
   backdrop-filter: blur(6px);
 }
-#sidebar { left: 0; width: min(208px, 22vw); border-right: 1px solid var(--line); }
+/* The legend is how you read the colours, so it must not be the thing that scrolls
+   off. Only the directory index gets to grow; everything below it stays pinned. */
+#sidebar {
+  left: 0;
+  width: min(208px, 22vw);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#dir-list { flex: 1; min-height: 60px; overflow-y: auto; }
+#sidebar > .head, #sidebar > #dir-filter, #sidebar > #legend, #sidebar > .note { flex: none; }
 #panel { right: 0; width: min(336px, 36vw); border-left: 1px solid var(--line); }
 
 #sidebar::-webkit-scrollbar,
@@ -217,7 +228,17 @@ body {
 .log .tool { color: var(--ink); text-transform: uppercase; font-size: 9px; letter-spacing: 0.16em; }
 .log .when { float: right; font-size: 9px; }
 .log .to { color: var(--ink); }
-.log .note { display: block; }
+/* .note is the sidebar's standalone-paragraph style. Inside a log row it is a label
+   for the line above it, so it has to drop that rule's top border and margin —
+   otherwise the gap above the label equals the gap between rows and the eye reads
+   each state as belonging to the next file. */
+.log .note {
+  display: block;
+  margin: 1px 0 0;
+  padding-top: 0;
+  border-top: 0;
+  line-height: 1.5;
+}
 
 #explain {
   width: 100%;
