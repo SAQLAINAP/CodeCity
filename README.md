@@ -84,6 +84,36 @@ metaphor stays 1:1 with real events.
 `⏎` for blast radius, `esc` to clear. The left index is the directory tree; clicking a
 row isolates that district and everything nested inside it.
 
+## Themes
+
+![The same city in all four themes](docs/themes.png)
+
+Four, from the picker in the top bar or `--theme <name>`:
+
+| | |
+|---|---|
+| `graphite` | monochrome dark — the default |
+| `montgomery` | Montgomery brutalist: béton brut, warm concrete, heavy rules |
+| `neo` | neo-brutalism: bone paper, black borders, hard offset shadows |
+| `acid` | acid brutalism: near-black ground, acid lime structure |
+
+The picker remembers your choice; an explicit `--theme` overrides it for that run,
+because a flag you just typed should beat a preference you set last week.
+
+Themes reshape form freely — borders, shadows, type, surface, and the whole ground
+palette, light or dark. What they may not do is spend colour on chrome. The five state
+hues are the only signal this tool has, so a theme whose signature *is* a colour pushes
+it onto structure lines and type instead, and retunes the state ramp around it. Acid is
+the clear case: its lime goes to rules, and `context` moves to cyan so "read, in
+context" can't be confused with the furniture.
+
+Every colour lives in `public/style.css` and nowhere else — the canvas reads the same
+custom properties the chrome does. Adding a theme is one `:root[data-theme='…']` block
+plus one line in `src/themes.js`; the dropdown, the CLI validation and the legend all
+build themselves from there. A test asserts each registered theme has a block and
+defines every token the renderer reads, so a half-finished theme fails the suite rather
+than silently inheriting the default's colours.
+
 ## How it works
 
 ```
@@ -144,7 +174,7 @@ a change to the state graph or the renderer.
 
 | Command | Purpose |
 |---|---|
-| `codecity` | Scan, serve, open the browser |
+| `codecity` (or `codecity start`) | Scan, serve, open the browser |
 | `codecity init` | Write the `PostToolUse` hook |
 | `codecity uninstall` | Remove it again |
 
@@ -153,9 +183,16 @@ a change to the state graph or the renderer.
 | `--port` | `4317` | Local server port. Must match what `init` wrote. |
 | `--root` | cwd | Project to visualise. |
 | `--max-files` | `400` | Building cap for large repos. |
+| `--theme` | remembered | `graphite`, `montgomery`, `neo` or `acid`. |
 | `--shared` | off | Write the hook to `settings.json` (committed) instead of `settings.local.json`. |
 | `--no-open` | off | Don't launch a browser. |
 | `--fresh` | off | Ignore the previous session log instead of replaying it. |
+| `-h`, `--help` | | Usage. |
+| `-v`, `--version` | | Version. |
+
+`--flag value` and `--flag=value` both work. Unknown flags, missing values and
+non-numeric counts all exit non-zero with a reason — a typo'd flag that silently
+does nothing is worse than one that fails.
 
 `npm test` runs the suite. It covers hook installation and the import graph; the
 renderer is checked by eye.

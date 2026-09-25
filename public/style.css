@@ -1,5 +1,15 @@
-/* The chrome spends no colour. Green, amber, red and blue mean agent attention and
-   nothing else, so the eye can trust that anything coloured is worth looking at. */
+/* Every colour in the app is declared here and nowhere else — the canvas reads these
+   same custom properties at run time, so a theme is one block in this file rather than
+   a palette duplicated between CSS and JS.
+
+   The one rule no theme may break: the chrome spends no colour. The five state hues
+   mean agent attention and nothing else, so the eye can trust that anything coloured
+   is worth looking at. Themes are free to reshape form — borders, shadows, type,
+   surface — but a theme that spends its signature colour on chrome would be spending
+   the tool's only signal on decoration. Where a theme's identity *is* a colour (acid),
+   that colour is pushed onto structure lines and type, and the state ramp is retuned
+   around it so the five states stay separable. The legend is drawn from the same
+   tokens, so it always tells the truth about the theme you are in. */
 :root {
   --bg: #0a0b0d;
   --chrome: #0d1014e6;
@@ -14,6 +24,150 @@
   --stale: #d1462f;
   --changed: #e0952b;
   --new: #4d8fd6;
+  --passed: #4d5661;
+
+  /* canvas-only tokens */
+  --grid: #161b21;
+  --plate-0: #0d1014;
+  --plate-1: #11151a;
+  --plate-2: #151a20;
+  --plate-3: #1a2027;
+  --plate-4: #1f262e;
+  --plate-line: #232b34;
+  --road: #39423b;
+  --road-hot: #4a5049;
+  --scrim: #0a0b0dd9;
+  --scrim-mid: #0a0b0de6;
+  --scrim-strong: #0a0b0df2;
+  /* the tone a lit building edge is mixed toward: white on a dark ground, ink on a light one */
+  --edge: #ffffff;
+
+  /* Form. --chrome and --blur are a pair: a translucent panel only reads as glass
+     when something is blurring what's behind it. Every theme that sets --blur: none
+     also makes --chrome opaque, because otherwise the city ghosts straight through
+     the side panels — invisible on a dark ground, obvious on a light one. */
+  --font: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --tracking: 0.04em;
+  --border-w: 1px;
+  --radius: 0;
+  --shadow: none;
+  --blur: blur(6px);
+  --weight: 400;
+}
+
+/* Montgomery brutalist — béton brut. Warm raw concrete, heavy mass, no ornament and
+   no blur; the chrome reads as poured slab rather than glass. */
+:root[data-theme='montgomery'] {
+  --bg: #17150f;
+  --chrome: #1e1b14;
+  --line: #3b352a;
+  --line-soft: #2a261d;
+  --ink: #ddd5c3;
+  --dim: #8a8271;
+  --accent: #f6f1e4;
+
+  --unseen: #4d4739;
+  --context: #7f9c5a;
+  --stale: #c2542c;
+  --changed: #d9a038;
+  --new: #6f8fae;
+  --passed: #5d5747;
+
+  --grid: #251f18;
+  --plate-0: #1b1811;
+  --plate-1: #211d15;
+  --plate-2: #27221a;
+  --plate-3: #2e281e;
+  --plate-4: #362f23;
+  --plate-line: #433b2d;
+  --road: #4a4335;
+  --road-hot: #5e5541;
+  --scrim: #17150fd9;
+  --scrim-mid: #17150fe6;
+  --scrim-strong: #17150ff2;
+  --edge: #fffaf0;
+
+  --tracking: 0.08em;
+  --border-w: 2px;
+  --blur: none;
+}
+
+/* Neo-brutalism — bone paper, pure black rules, hard offset shadows and no blur.
+   The only light theme, which is the real test of the canvas tokens: ground, plates
+   and scrims all have to invert without the state hues losing their footing. */
+:root[data-theme='neo'] {
+  --bg: #f4f1e8;
+  --chrome: #fffdf6;
+  --line: #12100c;
+  --line-soft: #c9c3b2;
+  --ink: #12100c;
+  --dim: #6c6656;
+  --accent: #12100c;
+
+  --unseen: #b9b3a2;
+  --context: #1f8f52;
+  --stale: #d62828;
+  --changed: #e08700;
+  --new: #2563c9;
+  --passed: #8f8979;
+
+  --grid: #ddd8c9;
+  --plate-0: #e9e5d8;
+  --plate-1: #e2ddcd;
+  --plate-2: #dad4c2;
+  --plate-3: #d2cbb6;
+  --plate-4: #c9c2ab;
+  --plate-line: #12100c;
+  --road: #9a9484;
+  --road-hot: #6c6656;
+  --scrim: #f4f1e8d9;
+  --scrim-mid: #f4f1e8e6;
+  --scrim-strong: #f4f1e8f2;
+  --edge: #12100c;
+
+  --tracking: 0.02em;
+  --border-w: 2px;
+  --shadow: 4px 4px 0 #12100c;
+  --blur: none;
+  --weight: 600;
+}
+
+/* Acid brutalism — near-black ground, acid lime structure, magenta counterpoint.
+   Lime is the theme's signature, so it is spent on rules and type only; `context`
+   moves to cyan so "read, in context" can never be confused with the furniture. */
+:root[data-theme='acid'] {
+  --bg: #050505;
+  --chrome: #0a0a0a;
+  --line: #24401a;
+  --line-soft: #161d12;
+  --ink: #d8ffc4;
+  --dim: #6f8a5e;
+  --accent: #c6ff3d;
+
+  --unseen: #33403a;
+  --context: #22d3ee;
+  --stale: #ff2d6f;
+  --changed: #ffb300;
+  --new: #a855f7;
+  --passed: #4a5a4a;
+
+  --grid: #10180d;
+  --plate-0: #080a07;
+  --plate-1: #0c110a;
+  --plate-2: #10170d;
+  --plate-3: #151e11;
+  --plate-4: #1a2515;
+  --plate-line: #2b4720;
+  --road: #3d5230;
+  --road-hot: #55703f;
+  --scrim: #050505d9;
+  --scrim-mid: #050505e6;
+  --scrim-strong: #050505f2;
+  --edge: #ffffff;
+
+  --tracking: 0.1em;
+  --border-w: 1px;
+  --blur: none;
 }
 
 * { box-sizing: border-box; }
@@ -22,8 +176,8 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.04em;
+  font: 11px/1.6 var(--font);
+  letter-spacing: var(--tracking);
   overflow: hidden;
 }
 
@@ -52,13 +206,14 @@ body {
   align-items: center;
   padding: 0 12px;
   background: var(--chrome);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--line);
+  backdrop-filter: var(--blur);
+  border-bottom: var(--border-w) solid var(--line);
 }
 
 .brand {
   color: var(--accent);
   font-size: 10px;
+  font-weight: var(--weight);
   letter-spacing: 0.3em;
   text-transform: uppercase;
 }
@@ -70,18 +225,43 @@ body {
   direction: rtl;
 }
 
-.chip {
+/* Pushed right against the agent chip. `margin-left: auto` lives here rather than on
+   .chip so the pair travels together as the topbar's right-hand group. */
+#theme-picker {
   margin-left: auto;
   flex: none;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+#theme-picker select {
+  padding: 1px 6px;
+  background: var(--bg);
+  border: var(--border-w) solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#theme-picker select:focus { outline: none; border-color: var(--accent); }
+
+.chip {
+  flex: none;
   padding: 1px 8px;
-  border: 1px solid var(--line);
+  border: var(--border-w) solid var(--line);
   color: var(--dim);
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
-.chip.live { color: var(--context); border-color: #26483a; }
-.chip.dead { color: var(--stale); border-color: #4a2620; }
+.chip.live { color: var(--context); border-color: color-mix(in srgb, var(--context) 42%, var(--line)); }
+.chip.dead { color: var(--stale); border-color: color-mix(in srgb, var(--stale) 42%, var(--line)); }
 
 #sidebar,
 #panel {
@@ -91,21 +271,21 @@ body {
   padding: 12px;
   overflow-y: auto;
   background: var(--chrome);
-  backdrop-filter: blur(6px);
+  backdrop-filter: var(--blur);
 }
 /* The legend is how you read the colours, so it must not be the thing that scrolls
    off. Only the directory index gets to grow; everything below it stays pinned. */
 #sidebar {
   left: 0;
   width: min(208px, 22vw);
-  border-right: 1px solid var(--line);
+  border-right: var(--border-w) solid var(--line);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 #dir-list { flex: 1; min-height: 60px; overflow-y: auto; }
 #sidebar > .head, #sidebar > #dir-filter, #sidebar > #legend, #sidebar > .note { flex: none; }
-#panel { right: 0; width: min(336px, 36vw); border-left: 1px solid var(--line); }
+#panel { right: 0; width: min(336px, 36vw); border-left: var(--border-w) solid var(--line); }
 
 #sidebar::-webkit-scrollbar,
 #panel::-webkit-scrollbar { width: 6px; }
@@ -121,7 +301,7 @@ body {
   align-items: center;
   padding: 0 12px;
   background: var(--chrome);
-  border-top: 1px solid var(--line);
+  border-top: var(--border-w) solid var(--line);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -135,14 +315,14 @@ body {
 #dir-filter {
   width: 100%;
   padding: 5px 7px;
-  background: #000;
-  border: 1px solid var(--line);
+  background: var(--bg);
+  border: var(--border-w) solid var(--line);
   color: var(--ink);
   font: inherit;
   letter-spacing: 0.1em;
 }
-#dir-filter::placeholder { color: #454e57; text-transform: uppercase; font-size: 9px; }
-#dir-filter:focus { outline: none; border-color: var(--accent); }
+#dir-filter::placeholder { color: var(--dim); text-transform: uppercase; font-size: 9px; }
+#dir-filter:focus { outline: none; border-color: var(--accent); box-shadow: var(--shadow); }
 
 #dir-list, #legend, .log { margin: 0; padding: 0; list-style: none; }
 
@@ -160,14 +340,25 @@ body {
 
 /* Share of the subtree the agent has touched — a filled bar rather than a ratio,
    because the useful question is "how far in is it", not "which two numbers". */
-#dir-list .bar { flex: none; width: 34px; height: 3px; background: var(--line); }
+/* The track is --line-soft, not --line: on a light theme --line is near-black, which
+   made the track darker than its own fill and inverted the reading. --line-soft is
+   the recessive tone in every theme, which is what a track has to be. */
+#dir-list .bar { flex: none; width: 34px; height: 3px; background: var(--line-soft); }
 #dir-list .bar i { display: block; height: 100%; background: var(--dim); }
 #dir-list li.on .bar i, #dir-list li:hover .bar i { background: var(--accent); }
 
 .note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--line-soft); line-height: 1.8; }
 
+/* The offset shadow is neo-brutalism's whole signature, but it only works on small
+   bounded objects — hung off a full-height fixed panel it just reads as a smear. So it
+   is spent on the chips, swatches and controls, and the panels keep their hard rules. */
+.chip, #theme-picker select { box-shadow: var(--shadow); }
+
 #legend li { display: flex; gap: 8px; align-items: center; color: var(--dim); padding: 1px 0; }
-#legend i { width: 9px; height: 9px; flex: none; }
+#legend i { width: 9px; height: 9px; flex: none; border: var(--border-w) solid transparent; }
+/* A 9px swatch can't carry the full 4px offset, so it gets a scaled-down one rather
+   than being left as the only flat object in a theme built on hard shadows. */
+:root[data-theme='neo'] #legend i { border-color: var(--line); box-shadow: 2px 2px 0 var(--line); }
 #legend i[data-state='unseen'] { background: var(--unseen); }
 #legend i[data-state='context'] { background: var(--context); }
 #legend i[data-state='stale'] { background: var(--stale); }
@@ -252,7 +443,7 @@ body {
   text-transform: uppercase;
   cursor: pointer;
 }
-#explain:hover:not(:disabled) { background: #f2f6f912; }
+#explain:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 #explain:disabled { opacity: 0.45; cursor: progress; }
 
 #panel-explain {

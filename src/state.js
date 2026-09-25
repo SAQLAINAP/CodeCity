@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { scanProject, lineCount, importsOf, indexFile } from './scan.js';
+import { THEMES } from './themes.js';
 
 const EVENTS_PER_BUILDING = 12;
 const FEED_LENGTH = 200;
@@ -17,6 +18,9 @@ export class CityState {
     this.roads = [];
     this.feed = [];
     this.startedAt = Date.now();
+    // null means "the CLI said nothing", which is what lets the browser fall back to
+    // the theme you last picked instead of being reset on every restart.
+    this.theme = options.theme ?? null;
 
     const { files, roads, index, totalFound, truncated } = scanProject(root, options);
     this.index = index;
@@ -174,6 +178,8 @@ export class CityState {
   snapshot() {
     return {
       root: this.root,
+      theme: this.theme,
+      themes: THEMES,
       startedAt: this.startedAt,
       totalFound: this.totalFound,
       truncated: this.truncated,

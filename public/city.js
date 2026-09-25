@@ -12,23 +12,37 @@ const CONTEXT_MS = 300_000;
 const GLYPH_MS = 14_000;
 const LIVE_MS = 60_000;
 
-// The chrome is deliberately monochrome. Colour in this tool means exactly one
-// thing — agent attention — so no interface element is allowed to spend any.
-const INK = '#c9d2db';
-const DIM = '#69737e';
-const ACCENT = '#f2f6f9';
-const GRID = '#161b21';
-const PLATE_TONES = ['#0d1014', '#11151a', '#151a20', '#1a2027', '#1f262e'];
-const PLATE_LINE = '#232b34';
+// The canvas takes its palette from the same CSS custom properties as the chrome, so
+// a theme is one block in style.css instead of a colour table kept in sync by hand.
+// Values are resolved once per theme change rather than per frame — getComputedStyle
+// forces style resolution, and doing that inside the draw loop would cost more than
+// everything else the renderer does.
+// Replaced by the server's registry (src/themes.js) as soon as the snapshot lands.
+// The default has to exist before then so the first paint has a palette to read.
+let THEMES = ['graphite'];
+
+const PALETTE_KEYS = ['ink', 'dim', 'accent', 'grid', 'plate-line', 'road', 'road-hot',
+  'scrim', 'scrim-mid', 'scrim-strong', 'edge'];
+
+const P = {};
+let PLATE_TONES = [];
 
 const STATES = {
-  unseen: { color: '#39414b', label: 'untouched' },
-  context: { color: '#3fb27a', label: 'read · in context' },
-  stale: { color: '#d1462f', label: 'read · context cooled' },
-  changed: { color: '#e0952b', label: 'changed by the agent' },
-  new: { color: '#4d8fd6', label: 'new ground' },
-  passed: { color: '#4d5661', label: 'seen in passing' },
+  unseen: { label: 'untouched' },
+  context: { label: 'read · in context' },
+  stale: { label: 'read · context cooled' },
+  changed: { label: 'changed by the agent' },
+  new: { label: 'new ground' },
+  passed: { label: 'seen in passing' },
 };
+
+function readPalette() {
+  const style = getComputedStyle(document.documentElement);
+  const token = (name) => style.getPropertyValue(`--${name}`).trim();
+  for (const key of PALETTE_KEYS) P[key] = token(key);
+  PLATE_TONES = [0, 1, 2, 3, 4].map((i) => token(`plate-${i}`));
+  for (const key of Object.keys(STATES)) STATES[key].color = token(key);
+}
 
 const TOOL_LABELS = {
   construct: 'written from scratch',
@@ -316,7 +330,7 @@ const floorsOf = (loc) => Math.max(1, Math.min(32, Math.round(loc / LINES_PER_FL
 function drawGrid() {
   if (!bounds || camera.scale < 0.22) return;
   ctx.save();
-  ctx.strokeStyle = GRID;
+  ctx.strokeStyle = P.grid;
   ctx.lineWidth = 1;
   ctx.setLineDash([1, 3]);
   ctx.beginPath();
@@ -374,7 +388,7 @@ function drawDistrictPlates() {
     ctx.closePath();
     ctx.fillStyle = tone;
     ctx.fill();
-    ctx.strokeStyle = lit ? ACCENT : PLATE_LINE;
+    ctx.strokeStyle = lit ? P.accent : P['plate-line'];
     ctx.lineWidth = 1;
     ctx.stroke();
   }
@@ -397,9 +411,9 @@ function drawDistrictLabels() {
     // The leaf name, not the full path — the nesting is already drawn as elevation.
     const text = (zone.name || city.root.split('/').pop() || 'root').toUpperCase();
     const width = ctx.measureText(text).width + 8;
-    ctx.fillStyle = '#0a0b0de6';
+    ctx.fillStyle = P['scrim-mid'];
     ctx.fillRect(corner.x - width / 2, corner.y + 2, width, size + 5);
-    ctx.fillStyle = focused ? ACCENT : zone.depth === 0 ? INK : DIM;
+    ctx.fillStyle = focused ? P.accent : zone.depth === 0 ? P.ink : P.dim;
     ctx.fillText(text, corner.x, corner.y + size + 4);
   }
 }
@@ -425,7 +439,7 @@ function drawRoads(now) {
     // line at that contrast is invisible, and a city whose roads cannot be seen
     // fails to show the coupling it exists to show. 1.9:1 stays a hairline but
     // reads, and still sits under the hot (2.4:1) and selected tiers.
-    ctx.strokeStyle = linked ? ACCENT : hot ? '#4a5049' : '#39423b';
+    ctx.strokeStyle = linked ? P.accent : hot ? P['road-hot'] : P.road;
     // Blast radius is the reason roads exist, so the selected file's edges get to
     // shout while the other two hundred stay hairlines.
     ctx.lineWidth = linked ? 1.75 : 1;
@@ -479,7 +493,7 @@ function drawBlock(building, now) {
   trace(top);
   ctx.fill();
   // A lit parapet on the roofline is what separates a building from a coloured box.
-  ctx.strokeStyle = mix(state.color, '#ffffff', 0.22);
+  ctx.strokeStyle = mix(state.color, P.edge, 0.22);
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -492,7 +506,7 @@ function drawBlock(building, now) {
   }
 
   if (focus) {
-    ctx.strokeStyle = INK;
+    ctx.strokeStyle = P.ink;
     ctx.lineWidth = 1.25;
     trace(silhouetteOf(px, py, hw, hh, h).map(([x, y]) => [x, y]));
     ctx.stroke();
@@ -566,7 +580,7 @@ function drawAnnotation(building, px, roofY, fresh, scale) {
   const cy = roofY - lead - r;
 
   ctx.globalAlpha *= fresh ? 1 : 0.5;
-  ctx.strokeStyle = fresh ? ACCENT : DIM;
+  ctx.strokeStyle = fresh ? P.accent : P.dim;
   ctx.fillStyle = ctx.strokeStyle;
   ctx.lineWidth = 1;
 
@@ -666,9 +680,9 @@ function drawLabels(now) {
     if (taken.some((other) => box.x < other.x + other.w && other.x < box.x + box.w
       && box.y < other.y + other.h && other.y < box.y + box.h)) continue;
     taken.push(box);
-    ctx.fillStyle = '#0a0b0dd9';
+    ctx.fillStyle = P.scrim;
     ctx.fillRect(box.x, box.y, box.w, box.h);
-    ctx.fillStyle = priority === 2 ? DIM : priority === 1 ? ACCENT : INK;
+    ctx.fillStyle = priority === 2 ? P.dim : priority === 1 ? P.accent : P.ink;
     ctx.fillText(name, x, box.y + 8);
   }
 }
@@ -683,14 +697,14 @@ function drawTooltip(now) {
   const text = `${hovered.path} · ${hovered.loc} lines / ${storeys} storey${storeys === 1 ? '' : 's'} · ${STATES[state.key].label}`;
   ctx.font = '10px ui-monospace, monospace';
   const width = ctx.measureText(text).width + 14;
-  ctx.fillStyle = '#0a0b0df2';
-  ctx.strokeStyle = PLATE_LINE;
+  ctx.fillStyle = P['scrim-strong'];
+  ctx.strokeStyle = P['plate-line'];
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.rect(x - width / 2, y - 42, width, 18);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = INK;
+  ctx.fillStyle = P.ink;
   ctx.textAlign = 'center';
   ctx.fillText(text, x, y - 29);
 }
@@ -906,7 +920,7 @@ function renderBlast(file) {
     const building = city.buildings.get(name);
     const state = building ? STATES[stateOf(building, Date.now()).key] : null;
     return `<li><span class="to">${escapeHtml(name)}</span>`
-      + `<span class="note" style="color:${state ? state.color : DIM}">${state ? state.label : 'outside the city'}</span></li>`;
+      + `<span class="note" style="color:${state ? state.color : P.dim}">${state ? state.label : 'outside the city'}</span></li>`;
   };
   const out = importsOut.get(file) ?? [];
   const incoming = importsIn.get(file) ?? [];
@@ -1098,9 +1112,55 @@ function applyEvent(event, building, roads) {
   needsDraw = true;
 }
 
+/* ---------- theme ---------- */
+
+const themeSelect = document.getElementById('theme');
+
+function applyTheme(name, { remember = true } = {}) {
+  const theme = THEMES.includes(name) ? name : THEMES[0];
+  document.documentElement.dataset.theme = theme;
+  themeSelect.value = theme;
+  // The canvas palette has to be re-read *after* the attribute lands, or it resolves
+  // against the outgoing theme and the city stays a frame behind the chrome.
+  readPalette();
+  needsDraw = true;
+  if (remember) {
+    try { localStorage.setItem('codecity.theme', theme); } catch { /* private mode */ }
+  }
+  return theme;
+}
+
+// Precedence: an explicit --theme on this run beats the remembered choice, because
+// the flag was typed just now. Without it, whatever you last picked in the dropdown
+// survives a restart.
+function initialTheme(fromServer) {
+  if (fromServer && THEMES.includes(fromServer)) return fromServer;
+  try {
+    const saved = localStorage.getItem('codecity.theme');
+    if (saved && THEMES.includes(saved)) return saved;
+  } catch { /* private mode */ }
+  return THEMES[0];
+}
+
+function renderThemes(registry) {
+  THEMES = registry.map((theme) => theme.id);
+  themeSelect.innerHTML = registry
+    .map((theme) => `<option value="${theme.id}" title="${theme.note}">${theme.label}</option>`)
+    .join('');
+}
+
+themeSelect.addEventListener('change', () => applyTheme(themeSelect.value));
+
+// Applied before the first paint so the remembered theme doesn't flash through the
+// default one. Only the default is known this early, so a remembered non-default
+// theme is re-applied once the registry arrives.
+applyTheme(initialTheme(null), { remember: false });
+
 async function boot() {
   resize();
   const snapshot = await (await fetch('/api/state')).json();
+  if (snapshot.themes?.length) renderThemes(snapshot.themes);
+  applyTheme(initialTheme(snapshot.theme), { remember: false });
   city.root = snapshot.root;
   city.roads = snapshot.roads;
   city.truncated = snapshot.truncated;

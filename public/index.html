@@ -12,6 +12,17 @@
     <header id="topbar">
       <span class="brand">CodeCity</span>
       <span id="root" class="dim"></span>
+
+      <label id="theme-picker">
+        <span class="dim">Theme</span>
+        <!-- Options are built from src/themes.js once the snapshot lands, so the list
+             lives in exactly one place. The default is inlined to avoid an empty
+             control on the first frame. -->
+        <select id="theme" aria-label="Interface theme">
+          <option value="graphite">Graphite</option>
+        </select>
+      </label>
+
       <span id="agent" class="chip">no agent yet</span>
     </header>
 
